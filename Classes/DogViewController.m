@@ -10,6 +10,7 @@
 #import "Dog.h"
 #import "AddDogViewController.h"
 #import "ViewDogController.h"
+#import "Response.h"
 
 @interface DogViewController (Private)
 
@@ -27,7 +28,18 @@
 }
 
 - (void) loadDogs {
-	self.dogs = [Dog findAll];
+	Response *response;
+	
+	// this demonstrates checking the response to ensure the server responds
+	self.dogs = [Dog findAll:&response];
+	
+	if (response.statusCode == 0) {
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Connection Error" message:@"There was a problem connecting to the server.  Please check your network connection."
+													   delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
+		[alert show];	
+		[alert release];		
+	} 
+	
 	[tableView reloadData];
 }
 

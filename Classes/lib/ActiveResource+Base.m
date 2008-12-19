@@ -50,9 +50,20 @@ static NSString *_activeResourcePassword = nil;
 	return [self allFromXMLData:res.body];
 }
 
++ (NSArray *)findAll:(Response **)res {
+	*res = [Connection get:[self collectionPath] withUser:[[self class] getUser] andPassword:[[self class]  getPassword]];			
+	return [self allFromXMLData:[*res body]];
+}
+
+
 + (id)find:(NSString *)elementId {
 	Response *res = [Connection get:[self elementPath:elementId] withUser:[[self class] getUser] andPassword:[[self class]  getPassword]];
 	return [self fromXMLData:res.body];
+}
+
++ (id)find:(NSString *)elementId withResponse:(Response **)res {
+	*res = [Connection get:[self elementPath:elementId] withUser:[[self class] getUser] andPassword:[[self class]  getPassword]];
+	return [self fromXMLData:[*res body]];
 }
 
 + (NSString *)elementName {
@@ -133,6 +144,18 @@ static NSString *_activeResourcePassword = nil;
 	}
 }
 
+- (BOOL)createAtPath:(NSString *)path withResponse:(Response **)res {
+	*res = [Connection post:[self toXMLElementExcluding:[NSArray arrayWithObject:[self classIdName]]] to:path withUser:[[self class]  getUser] andPassword:[[self class]  getPassword]];
+	if ([*res isSuccess]) {
+		NSDictionary *newProperties = [[[self class] fromXMLData:[*res body]] properties];
+		[self setProperties:newProperties];
+		return YES;
+	}
+	else {
+		return NO;
+	}
+}
+
 -(BOOL)updateAtPath:(NSString *)path {	
 	Response *res = [Connection put:[self toXMLElementExcluding:[NSArray arrayWithObject:[self classIdName]]] 
 											 to:path 
@@ -148,22 +171,62 @@ static NSString *_activeResourcePassword = nil;
 	
 }
 
+- (BOOL)updateAtPath:(NSString *)path withResponse:(Response **)res {
+	*res = [Connection put:[self toXMLElementExcluding:[NSArray arrayWithObject:[self classIdName]]] 
+								 to:path 
+						   withUser:[[self class]  getUser] andPassword:[[self class]  getPassword]];
+	if ([*res isSuccess]) {
+		NSDictionary *newProperties = [[[self class] fromXMLData:[*res body]] properties];
+		[self setProperties:newProperties];
+		return YES;
+	}
+	else {
+		return NO;
+	}
+	
+}
+
 - (BOOL)destroyAtPath:(NSString *) path {
 	return [[Connection delete:path withUser:[[self class]  getUser] andPassword:[[self class]  getPassword]] isSuccess];
+}
+
+- (BOOL)destroyAtPath:(NSString *)path withResponse:(Response **)res {
+	*res = [Connection delete:path withUser:[[self class]  getUser] andPassword:[[self class]  getPassword]];
+	return [*res isSuccess];
 }
 
 - (BOOL)create {
 	return [self createAtPath:[self collectionPath]];
 }
 
+- (BOOL)create:(Response **)res {
+	return [self createAtPath:[self collectionPath] withResponse:res];
+}
+
+
+
 - (BOOL)createWithParameters:(NSDictionary *)parameters {
 	return [self createAtPath:[[self class] collectionPathWithParameters:parameters]];
+}
+
+- (BOOL)createWithParameters:(NSDictionary *)parameters andResponse:(Response **)res {
+	return [self createAtPath:[[self class] collectionPathWithParameters:parameters] withResponse:res];
 }
 
 - (BOOL)destroy {
 	id myId = [self getId];
 	if (nil != myId) {
 		return [self destroyAtPath:[[self class] elementPath:myId]];
+	}
+	else {
+		return NO;
+	}
+}
+
+- (BOOL)destroy:(Response **)res {
+	id myId = [self getId];
+	if (nil != myId) {
+		return [self destroyAtPath:[[self class] elementPath:myId] withResponse:res];
 	}
 	else {
 		return NO;
@@ -180,6 +243,16 @@ static NSString *_activeResourcePassword = nil;
 	}
 }
 
+- (BOOL)update:(Response **)res {
+	id myId = [self getId];
+	if (nil != myId) {
+		return [self updateAtPath:[[self class] elementPath:myId] withResponse:res];
+	}
+	else {
+		return NO;
+	}
+}
+
 - (BOOL)save {
 	id myId = [self getId];
 	if (nil == myId) {
@@ -187,6 +260,16 @@ static NSString *_activeResourcePassword = nil;
 	}
 	else {
 		return [self update];
+	}
+}
+
+- (BOOL)save:(Response **)res {
+	id myId = [self getId];
+	if (nil == myId) {
+		return [self create:res];
+	}
+	else {
+		return [self update:res];
 	}
 }
 
